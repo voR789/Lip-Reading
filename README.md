@@ -12,7 +12,7 @@ As computing systems increasingly interface with humans through visual and multi
 
 This project uses a hybrid technique combining:
 
-- **Computer Vision** (via MediaPipe or OpenCV) to extract key features such as **lip contours, landmarks, and angles**.
+- **Computer Vision** (via MediaPipe and OpenCV) to extract key features such as **lip contours, landmarks, and angles**.
 - **Custom Feature Engineering** to encode lip positions and movement over time.
 - **Machine Learning Models** such as:
   - Simple MLPs (Multilayer Perceptrons)
@@ -24,7 +24,7 @@ The core pipeline includes:
 2. **Landmark detection** and lip-specific feature extraction
 3. **Temporal feature aggregation**
 4. **Model inference** on predicted phoneme/word/class
-5. (Optional) **Visualization** of landmarks or prediction output
+5. **Visualization** of landmarks or prediction output
 
 ## Goals
 
@@ -37,7 +37,7 @@ The core pipeline includes:
 ## Tools & Libraries
 
 - Python
-- OpenCV or MediaPipe
+- OpenCV / MediaPipe
 - NumPy / Pandas
 - PyTorch or TensorFlow
 - Matplotlib / Seaborn for visualization
@@ -50,7 +50,6 @@ The core pipeline includes:
 - [ ] Lip feature extraction prototype
 - [ ] Baseline ML model
 - [ ] Evaluation metrics setup
-- [ ] Visual debug interface
 
 ## Credits
 
