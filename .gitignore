@@ -1,0 +1,11 @@
+# 🎥 Ignore all video files
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.flv
+*.webm
+*.wmv
+*.mpeg
+*.mpg
+*.m4v
