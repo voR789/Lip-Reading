@@ -111,7 +111,7 @@ def fetch_data(frame, frame_number, previous_data):
     
     velocities = {}
     if frame_number == 0:
-        velocities = {f"landmark_{i}": 0 for i in key_landmarks_index}
+        velocities = {f"landmark_{i}": (0,0) for i in key_landmarks_index}
     else:
         for i in key_landmarks_index:
             v_x = (norm_coords[i][0] - previous_data[3][i][0])
@@ -127,7 +127,6 @@ def fetch_data(frame, frame_number, previous_data):
         norm_hori_opening_velocity = norm_hd - previous_data[0]['norm_hd'] # lip corner velocity 
     
     engineered_features = {
-        'frame_number': frame_number,
         'norm_uvh': norm_uvh,
         'norm_lvh': norm_lvh,
         'norm_vd': norm_vd,
