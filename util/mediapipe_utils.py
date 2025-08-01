@@ -1,5 +1,6 @@
 import mediapipe as mp
 import numpy as np
+import cv2
 
 mp_face_mesh = mp.solutions.face_mesh
 face_mesh = mp_face_mesh.FaceMesh(
@@ -8,6 +9,20 @@ face_mesh = mp_face_mesh.FaceMesh(
     refine_landmarks = True,
     min_detection_confidence = .5
     )
+
+def load_video(path):
+    capture = cv2.VideoCapture(path)
+    frames = []
+    while True:
+        returned, frame = capture.read()
+        if not returned:
+            break
+            # break when theres no more output
+        frames.append(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)) 
+        # convert each frame to RGB, as openCV is BGR
+    
+    capture.release()
+    return frames
 
 def get_landmarks(image):
     results = face_mesh.process(image)
@@ -19,15 +34,6 @@ def get_landmarks(image):
 def convert_landmarks_to_coordinates(landmarks, image_shape):
     h, w = image_shape[:2]
     return [(landmark.x*w, landmark.y*h) for landmark in landmarks.landmark]
-
-def get_bounding_box(coords, image_shape, padding = 10):
-    h, w = image_shape[:2]
-    x, y = zip(*coords)
-    x_min = max(min(x) - padding, 0)
-    y_min = max(min(y) - padding, 0)
-    x_max = min(max(x) + padding , w)
-    y_max = min(max(y) + padding, h)
-    return x_min, y_min, x_max, y_max
 
 def landmark_dist(l1, l2):
     p1 = np.array(l1)
@@ -77,12 +83,6 @@ def setup_landmarks(frame):
     # Crop and proccess landmarks
     landmarks = get_landmarks(frame)[0] # 0 being the first face found
     coords = convert_landmarks_to_coordinates(landmarks, frame.shape)
-    # Misaccuracies seem to be consitent and precise, so we go for the speedy method
-    # x_min, y_min, x_max, y_max = get_bounding_box(coords, frame.shape)
-    # cropped_frame = frame[int(y_min):int(y_max), int(x_min):int(x_max)]
-     
-    # cropped_landmarks = get_landmarks(cropped_frame)[0]
-    # coords = convert_landmarks_to_coordinates(cropped_landmarks, cropped_frame.shape)
     return coords
 
 def fetch_data(frame, frame_number, previous_data):    
@@ -107,16 +107,30 @@ def fetch_data(frame, frame_number, previous_data):
     norm_coords = [((coord[0]-eye_midpt[0]),(coord[1]-eye_midpt[1])) for coord in coords]
     key_landmarks_index = [78, 308, 13, 14, 152, 311, 81, 402, 178] 
     
-    key_norm_coords = {f"landmark_{i}":norm_coords[i] for i in key_landmarks_index}
+    key_norm_coords = {}
+    for i in range(len(key_landmarks_index)):
+        x = norm_coords[key_landmarks_index[i]][0]
+        y = norm_coords[key_landmarks_index[i]][1]
+        key_norm_coords[f"landmark_{key_landmarks_index[i]}_x"] = x
+        key_norm_coords[f"landmark_{key_landmarks_index[i]}_y"] = y
+    
+    # key_norm_coords = {f"landmark_{i}":norm_coords[i] for i in key_landmarks_index}
     
     velocities = {}
-    if frame_number == 0:
-        velocities = {f"landmark_{i}": (0,0) for i in key_landmarks_index}
-    else:
-        for i in key_landmarks_index:
-            v_x = (norm_coords[i][0] - previous_data[3][i][0])
-            v_y = (norm_coords[i][1] - previous_data[3][i][1])  
-            velocities[f"landmark_{i}"] = (v_x,v_y)
+    for i in range(len(key_landmarks_index)):
+        if(frame_number != 0):
+            v_x = norm_coords[key_landmarks_index[i]][0] - previous_data[1][f"landmark_{key_landmarks_index[i]}_x"]
+            v_y = norm_coords[key_landmarks_index[i]][1] - previous_data[1][f"landmark_{key_landmarks_index[i]}_y"]
+        else:
+            v_x = 0
+            v_y = 0
+        velocities[f"landmark_{key_landmarks_index[i]}_x"] = v_x
+        velocities[f"landmark_{key_landmarks_index[i]}_y"] = v_y
+            
+        # for i in key_landmarks_index:
+        #     v_x = (norm_coords[i][0] - previous_data[3][i][0])
+        #     v_y = (norm_coords[i][1] - previous_data[3][i][1])  
+        #     velocities[f"landmark_{i}"] = (v_x,v_y)
     
     # Engineered Feature Velocities - 1 Dimensional
     if frame_number == 0:
