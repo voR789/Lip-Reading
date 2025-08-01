@@ -2,7 +2,8 @@ import mediapipe as mp
 import numpy as np
 import cv2
 from pathlib import Path
-
+import torch
+from torch.nn.utils.rnn import pad_sequence
 
 mp_face_mesh = mp.solutions.face_mesh
 face_mesh = mp_face_mesh.FaceMesh(
@@ -224,7 +225,15 @@ def proccess_Clip(clip):
         velocities.append(data[2])
     return engineered_features, coordinates, velocities    
 
+def collate_fn(batch):
+    X_dim, X_2d1, X_2d2, y = zip(*batch) # unpack getItem data
     
-            
-            
-            
+    X_dim_padded = pad_sequence(X_dim, batch_first=True) # outputs 3dim tensor of (batch_size, max_seq_len, feature_size) "True Tensors"
+    X_2d1_padded = pad_sequence(X_2d1, batch_first=True)
+    X_2d2_padded = pad_sequence(X_2d2, batch_first=True)
+    
+    y_tensor = torch.stack(y)  # since labels are already tensors (dtype long)
+
+    return X_dim_padded, X_2d1_padded, X_2d2_padded, y_tensor
+
+
