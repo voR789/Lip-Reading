@@ -43,6 +43,7 @@ data_processed/
 *.npy
 *.csv
 *.h5
+*.align
 
 # OS files
 .DS_Store
