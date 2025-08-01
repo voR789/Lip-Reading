@@ -217,7 +217,6 @@ def proccess_Clip(clip):
     coordinates = []
     velocities = []
     for frame in clip:
-        print("j")
         data = fetch_data(frame, index, data) # inputs the last data fetched 
         index += 1
         engineered_features.append(data[0])

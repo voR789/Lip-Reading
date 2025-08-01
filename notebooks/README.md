@@ -4,8 +4,8 @@ This directory contains exploratory notebooks for developing and testing key com
 
 ## Contents
 
-- TBD
+- Testing on Computer Vision Data collection methods, data cleaning, and basic deep learning
 
 ## Usage
  
-- TBD
+- Prototype functions and models

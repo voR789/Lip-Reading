@@ -44,6 +44,8 @@ data_processed/
 *.csv
 *.h5
 *.align
+*.pth 
+*.npz
 
 # OS files
 .DS_Store
