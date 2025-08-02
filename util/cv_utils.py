@@ -226,10 +226,20 @@ def proccess_Clip(clip):
     return engineered_features, coordinates, velocities    
 
 def collate_fn(batch):
-    x1, x2, x3, y = zip(*batch) # unpack getItem data
+    # clean any corrupted data first\
+    cleaned = []
+    for sample in batch:
+        x1, x2, x3, y = sample
+        if x1.shape[0] == 0 or x2.shape[0] == 0 or x3.shape[0] == 0:
+            # skip
+            continue
+        else:
+            cleaned.append(sample)
     
-    if len(batch) == 0:
-        raise(ValueError(f"Corrupted data!"))
+    x1, x2, x3, y = zip(*cleaned) # unpack getItem data
+    
+    
+    
     x1_padded = pad_sequence(x1, batch_first=True) # outputs 3dim tensor of (batch_size, max_seq_len, feature_size) "True Tensors"
     x2_padded = pad_sequence(x2, batch_first=True)
     x3_padded = pad_sequence(x3, batch_first=True)
