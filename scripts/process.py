@@ -8,7 +8,9 @@ import warnings
 warnings.filterwarnings("ignore")
 
 # Paths
-base_dir = Path(r"C:\Projects\Lip_Reading\GRID")
+# base_dir = Path(r"C:\Projects\Lip_Reading\GRID")
+# Daniel's Path
+base_dir = Path(r"C:\Users\User\OneDrive\Documents\Projects\Lip-Reading\GRID")
 video_dir = base_dir / "raw/video_data" / sys.argv[1]
 align_dir = base_dir / "raw/alignment_data" / f"align_{sys.argv[1]}"
 processed_dir = base_dir / "processed" / sys.argv[1]
