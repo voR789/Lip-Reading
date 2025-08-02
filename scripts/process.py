@@ -88,13 +88,13 @@ try:
             clip = video[start:end]
             try:
                 feats, coords, veloc = proccess_Clip(clip)
+                feat_seq.append(np.array(feats, dtype=np.float32))
+                coords_seq.append(np.array(coords, dtype=np.float32))
+                veloc_seq.append(np.array(veloc, dtype=np.float32))
+                labels.append(vocab[word])
             except Exception as e:
                 print(f"Skipping segment {video_file.stem} [{start}:{end}] due to error: {e}")       
                 continue 
-            feat_seq.append(np.array(feats, dtype=np.float32))
-            coords_seq.append(np.array(coords, dtype=np.float32))
-            veloc_seq.append(np.array(veloc, dtype=np.float32))
-            labels.append(vocab[word])
         
         # Save to data files
         processed_dir = base_dir / processed_subdir / f"{sys.argv[1]}" 

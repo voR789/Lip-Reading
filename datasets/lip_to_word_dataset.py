@@ -17,7 +17,7 @@ class LipReadingWordDataset(Dataset):
         for folder in processed_dir.iterdir():
             folder = Path(folder)
             for data_file in folder.glob("*.pth"):            
-                data = torch.load(data_file, map_location= 'cpu')
+                data = torch.load(data_file, map_location= 'cpu', weights_only=False)
                 num_words = len(data["y_labels"])
                 for i in range(num_words):
                     self.index_map.append((data_file, i)) 
@@ -31,7 +31,7 @@ class LipReadingWordDataset(Dataset):
         # Return part of sequence for each word using index map (index being which word in the file)
         data_path, index = self.index_map[idx]
         if data_path not in self.cache:
-            self.cache[data_path] = torch.load(data_path, map_location= 'cpu')
+            self.cache[data_path] = torch.load(data_path, map_location= 'cpu', weights_only= False)
         # load from cache
         data = self.cache[data_path]
         

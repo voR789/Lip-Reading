@@ -228,6 +228,8 @@ def proccess_Clip(clip):
 def collate_fn(batch):
     x1, x2, x3, y = zip(*batch) # unpack getItem data
     
+    if len(batch) == 0:
+        raise(ValueError(f"Corrupted data!"))
     x1_padded = pad_sequence(x1, batch_first=True) # outputs 3dim tensor of (batch_size, max_seq_len, feature_size) "True Tensors"
     x2_padded = pad_sequence(x2, batch_first=True)
     x3_padded = pad_sequence(x3, batch_first=True)
