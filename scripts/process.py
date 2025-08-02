@@ -1,22 +1,19 @@
+from concurrent.futures import ProcessPoolExecutor
 import torch
 import numpy as np
-from util.cv_utils import load_video, extractClips, proccess_Clip
 from pathlib import Path
+from util.cv_utils import load_video, extractClips, proccess_Clip
 import sys
-
-
 import warnings
 warnings.filterwarnings("ignore")
 
-# TO USE RUN IN TERMINAL, along with sample folder name:
-# Ex) python scripts/process.py s1
-# File Paths
-base_path, video_subdir, align_subdir, processed_subdir = r"C:\Projects\Lip_Reading\GRID", r"raw/video_data",  r"raw/alignment_data", r"processed"
-base_dir = Path(base_path)
-video_dir = base_dir / video_subdir / sys.argv[1]
-align_dir = base_dir / align_subdir / f"align_{sys.argv[1]}"
+# Paths
+base_dir = Path(r"C:\Projects\Lip_Reading\GRID")
+video_dir = base_dir / "raw/video_data" / sys.argv[1]
+align_dir = base_dir / "raw/alignment_data" / f"align_{sys.argv[1]}"
+processed_dir = base_dir / "processed" / sys.argv[1]
+processed_dir.mkdir(parents=True, exist_ok=True)
 
-# Dataset Vocab
 vocab = {
     "<pad>": 0,
     "<sos>": 1,
@@ -74,16 +71,18 @@ vocab = {
     "y": 53,
     "z": 54
 }
-# Video by video approach: 
-# Memory Efficiency: You can load data lazily—only what you need per batch—so you’re not forced to load all data at once.
-try:
-    for video_file in video_dir.glob("*.mpg"):
-        feat_seq, coords_seq, veloc_seq, labels = [], [], [], []    
+
+def process_video(video_file: Path, align_dir: Path, vocab: dict, save_dir: Path):
+    try:
+        feat_seq, coords_seq, veloc_seq, labels = [], [], [], []
         align_file = align_dir / (video_file.stem + ".align")
-        if(not align_file.exists()):
-            raise RuntimeError(f"Align path does not exist for: {video_file.name}")
+        if not align_file.exists():
+            print(f"Missing align file: {video_file.name}")
+            return
+
         video = load_video(video_file)
         segments = extractClips(align_file)
+
         for start, end, word in segments:
             clip = video[start:end]
             try:
@@ -93,19 +92,30 @@ try:
                 veloc_seq.append(np.array(veloc, dtype=np.float32))
                 labels.append(vocab[word])
             except Exception as e:
-                print(f"Skipping segment {video_file.stem} [{start}:{end}] due to error: {e}")       
-                continue 
-        
-        # Save to data files
-        processed_dir = base_dir / processed_subdir / f"{sys.argv[1]}" 
-        processed_dir.mkdir(parents=True, exist_ok=True) # create dir
-        processed_file = processed_dir / f"{video_file.stem}_data.pth"
-        
-        # data usage (.pth)
+                print(f"Skipping {video_file.name} [{start}:{end}] due to error: {e}")
+                continue
+
+        save_path = save_dir / f"{video_file.stem}_data.pth"
         torch.save(
             {"x_feat": feat_seq, "x_coords": coords_seq, "x_veloc": veloc_seq, "y_labels": labels},
-            processed_file
-            )
-except Exception as e:
-    print(f"Failed to process {video_file.name}. {e}")
-print("Success!")
+            save_path
+        )
+        print(f"Processed: {video_file.name}")
+
+    except Exception as e:
+        print(f"Failed: {video_file.name} | Error: {e}")
+
+# Run multiprocessed
+if __name__ == "__main__":
+    from multiprocessing import freeze_support
+    freeze_support()  # Optional but safe on Windows
+
+    with ProcessPoolExecutor() as executor:
+        futures = [
+            executor.submit(process_video, video_path, align_dir, vocab, processed_dir)
+            for video_path in video_dir.glob("*.mpg")
+        ]
+
+        # Optional: block and re-raise errors
+        for future in futures:
+            future.result()
