@@ -113,10 +113,14 @@ if __name__ == "__main__":
     for i in range(1,len(sys.argv)):
         video_dir = base_dir / "raw/video_data" / sys.argv[i]
         align_dir = base_dir / "raw/alignment_data" / f"align_{sys.argv[i]}"
-        processed_dir = base_dir / "processed" / sys.argv[i]
-        processed_dir.mkdir(parents=True, exist_ok=True)
-            
         
+        # Training data
+        # processed_dir = base_dir / "processed" / sys.argv[i]
+        # processed_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Testing data
+        processed_dir = base_dir / "testing" / sys.argv[i]
+        processed_dir.mkdir(parents=True, exist_ok=True)
         with ProcessPoolExecutor() as executor:
             futures = [
                 executor.submit(process_video, video_path, align_dir, vocab, processed_dir)
