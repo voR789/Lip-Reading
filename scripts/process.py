@@ -8,14 +8,11 @@ import warnings
 warnings.filterwarnings("ignore")
 
 # Paths
-# base_dir = Path(r"C:\Projects\Lip_Reading\GRID")
+base_dir = Path(r"C:\Projects\Lip_Reading\GRID")
 # Daniel's Path
-base_dir = Path(r"C:\Users\User\OneDrive\Documents\Projects\Lip-Reading\GRID")
-video_dir = base_dir / "raw/video_data" / sys.argv[1]
-align_dir = base_dir / "raw/alignment_data" / f"align_{sys.argv[1]}"
-processed_dir = base_dir / "processed" / sys.argv[1]
-processed_dir.mkdir(parents=True, exist_ok=True)
+# base_dir = Path(r"C:\Users\User\OneDrive\Documents\Projects\Lip-Reading\GRID")
 
+# Command: python scripts/process.py s1 s2 ....
 vocab = {
     "<pad>": 0,
     "<sos>": 1,
@@ -76,7 +73,7 @@ vocab = {
 
 def process_video(video_file: Path, align_dir: Path, vocab: dict, save_dir: Path):
     try:
-        feat_seq, coords_seq, veloc_seq, labels = [], [], [], []
+        feat_seq, coords_seq, veloc_seq, acc_seq, labels = [], [], [], [], []
         align_file = align_dir / (video_file.stem + ".align")
         if not align_file.exists():
             print(f"Missing align file: {video_file.name}")
@@ -88,10 +85,11 @@ def process_video(video_file: Path, align_dir: Path, vocab: dict, save_dir: Path
         for start, end, word in segments:
             clip = video[start:end]
             try:
-                feats, coords, veloc = proccess_Clip(clip)
+                feats, coords, veloc, acc = proccess_Clip(clip)
                 feat_seq.append(np.array(feats, dtype=np.float32))
                 coords_seq.append(np.array(coords, dtype=np.float32))
                 veloc_seq.append(np.array(veloc, dtype=np.float32))
+                acc_seq.append(np.array(acc, dtype=np.float32))
                 labels.append(vocab[word])
             except Exception as e:
                 print(f"Skipping {video_file.name} [{start}:{end}] due to error: {e}")
@@ -99,25 +97,34 @@ def process_video(video_file: Path, align_dir: Path, vocab: dict, save_dir: Path
 
         save_path = save_dir / f"{video_file.stem}_data.pth"
         torch.save(
-            {"x_feat": feat_seq, "x_coords": coords_seq, "x_veloc": veloc_seq, "y_labels": labels},
+            {"x_feat": feat_seq, "x_coords": coords_seq, "x_veloc": veloc_seq, "x_acc": acc_seq,  "y_labels": labels},
             save_path
         )
         print(f"Processed: {video_file.name}")
 
     except Exception as e:
         print(f"Failed: {video_file.name} | Error: {e}")
-
+    
 # Run multiprocessed
 if __name__ == "__main__":
     from multiprocessing import freeze_support
     freeze_support()  # Optional but safe on Windows
 
-    with ProcessPoolExecutor() as executor:
-        futures = [
-            executor.submit(process_video, video_path, align_dir, vocab, processed_dir)
-            for video_path in video_dir.glob("*.mpg")
-        ]
+    for i in range(1,len(sys.argv)):
+        video_dir = base_dir / "raw/video_data" / sys.argv[i]
+        align_dir = base_dir / "raw/alignment_data" / f"align_{sys.argv[i]}"
+        processed_dir = base_dir / "processed" / sys.argv[i]
+        processed_dir.mkdir(parents=True, exist_ok=True)
+            
+        
+        with ProcessPoolExecutor() as executor:
+            futures = [
+                executor.submit(process_video, video_path, align_dir, vocab, processed_dir)
+                for video_path in video_dir.glob("*.mpg")
+            ]
 
-        # Optional: block and re-raise errors
-        for future in futures:
-            future.result()
+            # Optional: block and re-raise errors
+            for future in futures:
+                future.result()
+                
+        print("Sucess!")
