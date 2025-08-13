@@ -2,7 +2,7 @@ from concurrent.futures import ProcessPoolExecutor
 import torch
 import numpy as np
 from pathlib import Path
-from util.cv_utils import load_video, extractClips, proccess_Clip
+from util.cv_utils import load_video, extractClips, proccess_Clip, augment_frame, augment_landmarks, temporal_crop
 import sys
 import warnings
 warnings.filterwarnings("ignore")
@@ -80,10 +80,16 @@ def process_video(video_file: Path, align_dir: Path, vocab: dict, save_dir: Path
             return
 
         video = load_video(video_file)
+
+        # Data Augmentation Image-Level - Daniel
+        video = [augment_frame(frame) for frame in video]
+
+
         segments = extractClips(align_file)
 
         for start, end, word in segments:
             clip = video[start:end]
+
             try:
                 feats, coords, veloc, acc = proccess_Clip(clip)
                 feat_seq.append(np.array(feats, dtype=np.float32))

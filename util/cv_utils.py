@@ -264,3 +264,42 @@ def collate_fn(batch):
     return x1_padded, x2_padded, x3_padded, x4_padded, y_tensor
 
 
+import random
+# FOR FRAME AUGMENTATION to improve model robustness
+def augment_frame(frame):
+    # Flip horizontally 50% of the time
+    if random.random() < 0.5:
+        frame = cv2.flip(frame, 1)
+    
+    # Adjust brightness & contrast randomly
+    alpha = 1.0 + (random.random() - 0.5) * 0.4  # contrast [0.8, 1.2]
+    beta = (random.random() - 0.5) * 50         # brightness [-25, 25]
+    frame = cv2.convertScaleAbs(frame, alpha=alpha, beta=beta)
+    
+    # Add Gaussian blur randomly
+    if random.random() < 0.3:
+        ksize = random.choice([3, 5])
+        frame = cv2.GaussianBlur(frame, (ksize, ksize), 0)
+    
+    return frame
+
+# Augment landmarks to improve model robustness
+def augment_landmarks(landmarks):
+    # landmarks: numpy array shape (num_points, 2)
+    
+    # Random jitter
+    jitter = np.random.normal(0, 0.002, landmarks.shape)  # ~0.2% noise
+    landmarks += jitter
+    
+    # Random scaling
+    scale = 1 + np.random.uniform(-0.05, 0.05)  # ±5%
+    center = np.mean(landmarks, axis=0)
+    landmarks = (landmarks - center) * scale + center
+    
+    return landmarks
+
+def temporal_crop(sequence, min_ratio=0.9):
+    length = len(sequence)
+    crop_len = int(length * random.uniform(min_ratio, 1.0))
+    start = random.randint(0, length - crop_len)
+    return sequence[start:start+crop_len]
