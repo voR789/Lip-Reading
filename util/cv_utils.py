@@ -205,7 +205,9 @@ def fetch_data(frame, frame_number, previous_data):
         else:
             v_x = 0
             v_y = 0
-        velocities.extend([v_x, v_y])
+        norm_v_x, = normalize_horizontal_measurements(coords, [v_x])
+        norm_v_y, = normalize_vertical_measurements(coords, [v_y])
+        velocities.extend([norm_v_x, norm_v_y])
     
     # Accelerations
     accelerations = []
@@ -216,7 +218,9 @@ def fetch_data(frame, frame_number, previous_data):
         else:
             a_x = 0
             a_y = 0
-        accelerations.extend([a_x, a_y])
+        norm_a_x, = normalize_horizontal_measurements(coords, [a_x])
+        norm_a_y, = normalize_vertical_measurements(coords, [a_y])
+        accelerations.extend([norm_a_x, norm_a_y])
     
     # return 4 2d data matrices for each frame
     return [engineered_features, key_norm_coords, velocities, accelerations]

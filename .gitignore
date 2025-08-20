@@ -38,13 +38,10 @@ dist/
 .vscode/
 
 # Data files (optional: exclude large datasets)
-data/
-data_processed/
 *.npy
 *.csv
 *.h5
 *.align
-*.pth 
 *.npz
 
 # OS files

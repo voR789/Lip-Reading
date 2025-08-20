@@ -1,9 +1,11 @@
 from concurrent.futures import ProcessPoolExecutor
 import torch
 import numpy as np
+from collections import defaultdict
 from pathlib import Path
 from util.cv_utils import load_video, extractClips, proccess_Clip
 import sys
+import pickle
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -14,9 +16,6 @@ base_dir = Path(r"C:\Projects\Lip_Reading\GRID")
 
 # Command: python scripts/process.py s1 s2 ....
 vocab = {
-    "<pad>": 0,
-    "<sos>": 1,
-    "<eos>": 2,
     "sp": 3,
     "bin": 4,
     "lay": 5,
@@ -71,7 +70,8 @@ vocab = {
     "z": 54
 }
 
-def process_video(video_file: Path, align_dir: Path, vocab: dict, save_dir: Path):
+def process_video(video_file: Path, align_dir: Path, vocab: dict, save_dir: Path, parent_dir: Path):
+    
     try:
         feat_seq, coords_seq, veloc_seq, acc_seq, labels = [], [], [], [], []
         align_file = align_dir / (video_file.stem + ".align")
@@ -82,20 +82,24 @@ def process_video(video_file: Path, align_dir: Path, vocab: dict, save_dir: Path
         video = load_video(video_file)
         segments = extractClips(align_file)
 
+        word_index = 0
         for start, end, word in segments:
             clip = video[start:end]
             try:
                 feats, coords, veloc, acc = proccess_Clip(clip)
+                
                 feat_seq.append(np.array(feats, dtype=np.float32))
                 coords_seq.append(np.array(coords, dtype=np.float32))
                 veloc_seq.append(np.array(veloc, dtype=np.float32))
                 acc_seq.append(np.array(acc, dtype=np.float32))
                 labels.append(vocab[word])
+                
+                word_index += 1
             except Exception as e:
                 print(f"Skipping {video_file.name} [{start}:{end}] due to error: {e}")
                 continue
 
-        save_path = save_dir / f"{video_file.stem}_data.pth"
+        save_path = save_dir / f"{video_file.stem}.pth"
         torch.save(
             {"x_feat": feat_seq, "x_coords": coords_seq, "x_veloc": veloc_seq, "x_acc": acc_seq,  "y_labels": labels},
             save_path
@@ -105,6 +109,12 @@ def process_video(video_file: Path, align_dir: Path, vocab: dict, save_dir: Path
     except Exception as e:
         print(f"Failed: {video_file.name} | Error: {e}")
     
+
+
+
+ 
+
+
 # Run multiprocessed
 if __name__ == "__main__":
     from multiprocessing import freeze_support
@@ -114,21 +124,24 @@ if __name__ == "__main__":
         video_dir = base_dir / "raw/video_data" / sys.argv[i]
         align_dir = base_dir / "raw/alignment_data" / f"align_{sys.argv[i]}"
         
-        # Training data
-        # processed_dir = base_dir / "processed" / sys.argv[i]
-        # processed_dir.mkdir(parents=True, exist_ok=True)
-        
-        # Testing data
-        processed_dir = base_dir / "testing" / sys.argv[i]
+        # Proccesed data
+        processed_dir = base_dir / "processed" / sys.argv[i]
         processed_dir.mkdir(parents=True, exist_ok=True)
+        
+        parent_dir = Path(sys.argv[i])
+        
         with ProcessPoolExecutor() as executor:
             futures = [
-                executor.submit(process_video, video_path, align_dir, vocab, processed_dir)
+                executor.submit(process_video, video_path, align_dir, vocab, processed_dir, parent_dir)
                 for video_path in video_dir.glob("*.mpg")
             ]
 
-            # Optional: block and re-raise errors
-            for future in futures:
-                future.result()
+            # for future in futures:
+            #     result = future.result() # return val for each process
+            #     if result is None:
+            #         continue
+            #     for label, files in result.items():
+            #         word_map[label].extend(files)
                 
-        print("Sucess!")
+        print(f"Success: {sys.argv[i]}")
+
